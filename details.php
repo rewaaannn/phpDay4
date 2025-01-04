@@ -17,23 +17,40 @@ $sql = 'SELECT id, name, email, gender, receive_emails FROM users';
 mysqli_select_db($conn,$dbname);
 $result = mysqli_query($conn,$sql );
 
-if(! $result ) {
-   die('Could not get data: ' . mysqli_connect_error($result));
+//delete row
+if (isset($_GET['delete'])) {
+    $id_to_delete = intval($_GET['delete']); 
+
+    $delete_sql = "DELETE FROM users WHERE id = $id_to_delete";
+    if (mysqli_query($conn, $delete_sql)) {
+        echo '<div class="alert alert-success">User deleted successfully.</div>';
+    } else {
+        echo '<div class="alert alert-danger">Error deleting user: ' . mysqli_error($conn) . '</div>';
+    }
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// echo 'Connected successfully<br>';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = $_POST['name'];
     $email = $_POST['email'];
     $gender = $_POST['gender'];
-    $mail_status = isset($_POST['mail_status']) ? 'yes' : 'no';
+    $receive_emails = isset($_POST['receive_emails']) ? 'Subscribed' : 'Unsubscribed';
 
-    $_SESSION['users'][] = [
-        'name' => $name,
-        'email' => $email,
-        'gender' => $gender,
-        'mail_status' => $mail_status,
-    ];
+
+$sql = "INSERT INTO users (name, email, gender, receive_emails) 
+        VALUES ('$name', '$email', '$gender', '$receive_emails')";
+
+    $retval = mysqli_query( $conn,$sql );
+    
+
+    if(! $retval ) {
+       die('Could not insert to table: ' . mysqli_connect_error($retval));
+    }
+     
+    echo "<br>Data inserted to table successfully\n";
 }
+
 
 mysqli_close($conn);
 
@@ -65,31 +82,30 @@ mysqli_close($conn);
                     <th>Email</th>
                     <th>Gender</th>
                     <th>Mail Status</th>
-                    <th>Action</th>
-                </tr>
+                    <th colspan="3">Action</th>
+           
+
             </thead>
             <tbody>
-                <?php if (!empty($_SESSION['users'])): ?>
-                    <?php foreach ($_SESSION['users'] as $index => $user): ?>
-                        <tr>
-                            <td><?= $index + 1 ?></td>
-                            <td><?= htmlspecialchars($user['name']) ?></td>
-                            <td><?= htmlspecialchars($user['email']) ?></td>
-                            <td><?= htmlspecialchars($user['gender']) ?></td>
-                            <td><?= htmlspecialchars($user['mail_status']) ?></td>
-                            <td>
-                                <button class="btn  btn-sm"><i class="fa-solid fa-eye"></i></button>
-                                <button class="btn  btn-sm"><i class="fa-solid fa-pen"></i></button>
-                                <button class="btn  btn-sm"><i class="fa-solid fa-trash"></i></button>
-                                
-                            </td> 
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="6" class="text-center">No users added yet.</td>
-                    </tr>
-                <?php endif; ?>
+                <?php   if (mysqli_num_rows($result) > 0) {
+                   
+                    while ($row = mysqli_fetch_assoc($result)) {
+                        echo '<tr>';
+                        echo '<td>' . htmlspecialchars($row['id']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['name']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['email']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['gender']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['receive_emails']) . '</td>';
+                        echo '<td><a href="view.php?id=' . htmlspecialchars($row['id']) . '" class="btn btn-sm"><i class="fa-solid fa-eye"></i></a></td>';
+                        echo '<td><a href="demo.php?id=' . htmlspecialchars($row['id']) . '" class="btn btn-sm "><i class="fa-solid fa-pen"></i> </a></td>';
+                        echo '<td><a href="details.php?delete='.  $row['id'] .'" class="btn btn-sm "><i class="fa-solid fa-trash"></i></a></td>';
+
+                        echo '</tr>';
+                    }
+                } else {
+                    echo '<tr><td colspan="6" class="text-center">No users found</td></tr>';
+                }
+                ?>
             </tbody>
         </table>
     </div>
